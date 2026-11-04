@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "reading-mode-plugin",
   "name": "מצב קריאה",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "קריאה בטורים נגללים כמו בוורד, כקורא משובץ בכרטיסיית הספר, עם ספרייה, מפרשים, סימניות וייצוא לוורד. מבוסס חלקית על תוסף \"שני טורים\".",
   "author": "שני טורים",
   "type": "webapp",
@@ -47,6 +47,34 @@
           "icon": "text_column_two_24_regular",
           "contexts": [
             "reader-text"
+          ],
+          "type": "split",
+          "children": [
+            {
+              "id": "rm-clean",
+              "title": "מסך נקי (Esc ליציאה)",
+              "icon": "full_screen_maximize_24_regular"
+            },
+            {
+              "id": "rm-mode",
+              "title": "החלפת כיוון גלילה (לצד ⇄ למטה)",
+              "icon": "arrow_bidirectional_up_down_24_regular"
+            },
+            {
+              "id": "rm-cols",
+              "title": "מספר טורים (1–5)",
+              "icon": "text_column_two_24_regular"
+            },
+            {
+              "id": "rm-page",
+              "title": "מעבר לעמוד… (Ctrl+G)",
+              "icon": "document_page_number_24_regular"
+            },
+            {
+              "id": "rm-report",
+              "title": "שליחת דיווח על התוסף",
+              "icon": "person_feedback_24_regular"
+            }
           ]
         }
       ],

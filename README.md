@@ -4,4 +4,4 @@
 
 - קוד: `src/` (אוצריא 0.9.98.3 ומעלה)
 - הורדה: [Releases](https://github.com/Hadabadra/Reading-mode/releases) או חנות התוספים של אוצריא
-- תיעוד טכני: `docs/`
+- תיעוד טכני: `docs/` (כולל מבנה החלוקה לעמודים ותפריט הסרגל – `docs/default-text-reader.md`)
