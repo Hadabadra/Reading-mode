@@ -2,14 +2,14 @@
   "schemaVersion": 1,
   "id": "reading-mode-plugin",
   "name": "מצב קריאה",
-  "version": "1.5.1",
-  "description": "קריאה בטורים נגללים כמו בוורד, ספרייה, מפרשים, סימניות וייצוא לוורד. מבוסס חלקית על תוסף \"שני טורים\".",
+  "version": "2.0.0",
+  "description": "קריאה בטורים נגללים כמו בוורד, כקורא משובץ בכרטיסיית הספר, עם ספרייה, מפרשים, סימניות וייצוא לוורד. מבוסס חלקית על תוסף \"שני טורים\".",
   "author": "שני טורים",
   "type": "webapp",
   "entrypoint": "index.html",
   "category": "Utilities",
   "stability": "beta",
-  "minAppVersion": "0.9.98",
+  "minAppVersion": "0.9.98.3",
   "sdkVersion": "1.x",
   "permissions": [
     "library.books.read",
@@ -29,7 +29,8 @@
     "ui.feedback",
     "plugin.storage.read",
     "plugin.storage.write",
-    "events.subscribe:theme.changed"
+    "events.subscribe:theme.changed",
+    "search.field_actions"
   ],
   "contributes": {
     "toolTab": {
@@ -41,13 +42,12 @@
     "startup": {
       "toolbarItems": [
         {
-          "id": "reading-mode-open",
-          "title": "פתח במצב קריאה",
+          "id": "reading-mode-toggle",
+          "title": "מצב קריאה / קורא רגיל",
           "icon": "text_column_two_24_regular",
           "contexts": [
             "reader-text"
-          ],
-          "openPlugin": true
+          ]
         }
       ],
       "shortcuts": [
@@ -56,6 +56,17 @@
           "label": "פתח במצב קריאה",
           "key": "ctrl+shift+k",
           "command": "word-reader-open"
+        }
+      ],
+      "searchFieldActions": [
+        {
+          "id": "reading-mode-find",
+          "title": "פתח במצב קריאה",
+          "icon": "book_open_24_regular",
+          "fields": [
+            "library",
+            "findRef"
+          ]
         }
       ]
     }

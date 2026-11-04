@@ -1,0 +1,51 @@
+name: פרסום לחנות אוצריא
+
+# מפרסם את "מצב קריאה" (reading-mode-plugin) לחנות אוצריא מתיקיית src.
+# רץ בכל דחיפה ל-main שמשנה את src/manifest.json, וגם ידנית מלשונית Actions.
+# גרסה שכבר קיימת בחנות לא מתפרסמת שוב (publish: auto). סודות: OTZARIA_USER / OTZARIA_PASSWORD.
+
+on:
+  push:
+    branches: [main]
+    paths: ['src/manifest.json', '.github/workflows/store.yml']
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'לפרסם גם אם הגרסה כבר קיימת'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: store
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: גרסה
+        id: v
+        run: echo "version=$(node -p "require('./src/manifest.json').version")" >> "$GITHUB_OUTPUT"
+      - name: ולידציה, קיפול ופרסום
+        timeout-minutes: 6
+        uses: Otzaria/otzaria-plugin-validator@v1
+        with:
+          path: src
+          otzaria-user: ${{ secrets.OTZARIA_USER }}
+          otzaria-password: ${{ secrets.OTZARIA_PASSWORD }}
+          publish: 'auto'
+          force: ${{ github.event.inputs.force || false }}
+          reports-consent: 'true'
+      - name: Release בגיטהאב
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V=${{ steps.v.outputs.version }}
+          cd src && zip -qr -X "../reading-mode-$V.otzplugin" manifest.json index.html && cd ..
+          gh release view "v$V" >/dev/null 2>&1 || gh release create "v$V" "reading-mode-$V.otzplugin" -t "מצב קריאה $V" -n "ראו מה חדש בתוך התוסף (אודות)."
