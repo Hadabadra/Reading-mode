@@ -59,7 +59,8 @@ body.v #strip{flex-direction:column;width:auto;align-items:center}
 .spin{width:28px;height:28px;border-radius:50%;border:3px solid color-mix(in srgb,var(--onSurface) 12%,transparent);border-top-color:var(--primary);margin:0 auto 12px;animation:sp 1s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 #hello{position:absolute;inset:0;display:none;place-items:center;text-align:center}
-#hello.on{display:grid}#hello .logo,#hello p{display:none}#hello h1{font-size:20px;margin:0 0 12px}
+#hello.on{display:grid}#hello h1{font-size:1.4em;margin:0 0 .6em}#hello .hw{max-width:34em;padding:1.5em}#hello .hx{color:var(--onSurfaceVariant);line-height:1.7;margin-bottom:1.2em}#hello .hb{display:flex;gap:.6em;justify-content:center;flex-wrap:wrap}#hello .hs{margin-top:.8em;font-size:.85em;color:var(--onSurfaceVariant)}
+#cleanX{display:none;position:fixed;top:.5em;inset-inline-end:.5em;z-index:70;opacity:.55}#cleanX:hover{opacity:1}body.clean:not(.emb) #cleanX{display:inline-flex}
 input,select{border:1px solid var(--outline);border-radius:8px;background:var(--surface);color:var(--onSurface);padding:10px 12px;font:inherit;width:100%;caret-color:var(--primary)}
 input:focus,select:focus{outline:2px solid var(--primary);outline-offset:-2px}
 .drawer{position:fixed;top:94px;bottom:0;width:min(380px,94vw);z-index:60;background:var(--surfaceContainerHigh);color:var(--onSurface);display:flex;flex-direction:column;transition:transform .2s}
@@ -131,6 +132,7 @@ body.clean .drawer{top:0}body.clean .shade{inset:0}
 #rbar{display:flex;align-items:center;height:56px;flex-shrink:0;gap:2px;padding-inline:10px;background:var(--surfaceContainer);color:var(--onSurface);overflow-x:auto;scrollbar-width:none}
 #rbar::-webkit-scrollbar{display:none}
 body:has(#libview.on) #rbar,body.emb #rbar,body.clean #rbar{display:none}
+body.reading:not(.emb):not(.clean):not(:has(#libview.on)) #rbar{display:flex!important}
 body:not(:has(#libview.on)) #top{display:none}
 #bMode,#bFull,#bSet{display:none}
 /* ===== 2.1.0 ===== */
@@ -243,9 +245,10 @@ body.h.colstep .col{scroll-snap-align:start}
   <button class="ibtn" id="bNew" title="לשונית חדשה – ספרייה (Ctrl+T)"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
   <nav class="tabs" id="tabs"></nav>
 </div>
+<button class="ibtn" id="cleanX" title="יציאה ממסך נקי (Esc)">יציאה ממסך נקי</button>
 <main id="desk">
   <div id="scroller"><div id="strip"></div></div>
-  <div id="hello" class="on"><div><div class="logo"><svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-4.500-2-8-2v14c3.500 0 6 .5 8 2 2-1.500 4.500-2 8-2V4c-3.500 0-6 .5-8 2zM12 6v14"/></svg></div><h1>מצב קריאה</h1><p>קריאה רציפה ב-1 עד 5 טורים נגללים לצד, בלי עמודים</p><button class="ibtn primary" id="hLib">בחירת ספר מהספרייה</button></div></div>
+  <div id="hello" class="on"><div class="hw"><h1>מצב קריאה</h1><div class="hx">ספרים מהספרייה של אוצריא נפתחים במצב קריאה <b>בתוך הקורא הרגיל</b> (כשקורא ברירת המחדל פעיל). אין צורך לפתוח את הלשונית הזו כדי לקרוא.<br>לחצן "מצב קריאה" בסרגל הספר מחליף בין מצב קריאה לעיון הרגיל, והחץ שלידו פותח תפריט (מסך נקי, טורים, כיוון גלילה, מעבר לעמוד, קריאה בלשונית התוסף).</div><div class="hb"><button class="ibtn primary" id="hLib">קריאה בלשונית התוסף</button><button class="ibtn sec" id="hDef">…</button></div><div class="hs" id="hDefS"></div></div></div>
   <section id="libview">
   <div class="lv-main">
     <nav id="crumbs"></nav><div id="lg"></div>
@@ -283,7 +286,7 @@ const sto={
   async get(k){try{const v=await call('storage.get',{key:k});return v&&typeof v==='object'&&'data' in v&&Object.keys(v).length<=2?v.data:v}catch(e){try{return JSON.parse(localStorage.getItem('wr:'+k))}catch(_){return null}}},
   async set(k,v){try{await call('storage.set',{key:k,value:v})}catch(e){try{localStorage.setItem('wr:'+k,JSON.stringify(v))}catch(_){}}}
 };
-const VER='2.1.0';
+const VER='2.2.0';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const frame=()=>new Promise(r=>requestAnimationFrame(()=>r()));
 function toast(t,ms=2600){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),ms)}
@@ -474,7 +477,36 @@ function makeNode(sec){
 const tabs=[];let cur=null;
 const keyOf=r=>r.bookUid||r.bookId;
 function busy(on,t,p){$('#busy').classList.toggle('on',on);if(t)$('#busyT').textContent=t;if(p!=null)$('#busyB').style.width=Math.round(p*100)+'%'}
+async function unzipEntry(buf,name){
+  const v=new DataView(buf),u=new Uint8Array(buf);let e=buf.byteLength-22;while(e>=0&&v.getUint32(e,true)!==0x06054b50)e--;if(e<0)throw new Error('קובץ וורד פגום');
+  let o=v.getUint32(e+16,true);const n=v.getUint16(e+10,true),td=new TextDecoder();
+  for(let k=0;k<n;k++){const m=v.getUint16(o+10,true),cs=v.getUint32(o+20,true),fl=v.getUint16(o+28,true),xl=v.getUint16(o+30,true),cl=v.getUint16(o+32,true),lo=v.getUint32(o+42,true);
+    const fn=td.decode(u.subarray(o+46,o+46+fl));o+=46+fl+xl+cl;if(fn!==name)continue;
+    const ds=lo+30+v.getUint16(lo+26,true)+v.getUint16(lo+28,true),raw=u.subarray(ds,ds+cs);
+    if(m===0)return td.decode(raw);
+    return await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text()}
+  throw new Error('לא נמצא תוכן במסמך')}
+async function fetchDocx(ref){
+  const f=await call('library.openBookFile',{bookId:ref.bookId,...(ref.bookUid?{bookUid:ref.bookUid}:{}),type:ref.type||'docx'});
+  const buf=await (await fetch(f.url)).arrayBuffer();
+  const x=new DOMParser().parseFromString(await unzipEntry(buf,'word/document.xml'),'application/xml');
+  const W='http://schemas.openxmlformats.org/wordprocessingml/2006/main',secs=[];let i=0;
+  for(const p of x.getElementsByTagNameNS(W,'p')){
+    let t='';for(const n of p.getElementsByTagNameNS(W,'*')){if(n.localName==='t')t+=n.textContent;else if(n.localName==='tab')t+=' ';else if(n.localName==='br')t+=' '}
+    t=t.replace(/\s+/g,' ').trim();if(!t)continue;
+    const ps=p.getElementsByTagNameNS(W,'pStyle')[0],ol=p.getElementsByTagNameNS(W,'outlineLvl')[0];
+    const sv=ps?ps.getAttributeNS(W,'val')||ps.getAttribute('w:val')||'':'';
+    let lv=ol?(+(ol.getAttributeNS(W,'val')||ol.getAttribute('w:val'))+1):0;
+    if(!lv){const mm=/(?:heading|כותרת)\s*(\d)/i.exec(sv);if(mm)lv=+mm[1];else if(/^title$/i.test(sv))lv=1}
+    lv=Math.min(6,Math.max(0,lv|0));
+    secs.push({i:i++,raw:lv?`<h${lv+1}>${esc(t)}</h${lv+1}>`:esc(t)})}
+  if(!secs.length)throw new Error('המסמך ריק');return secs}
 async function fetchBook(ref,prog){
+  if(/^(docx|doc|odt|rtf)$/i.test(ref.type||''))return fetchDocx(ref);
+  let secs=null,err=null;try{secs=await fetchBookText(ref,prog)}catch(e){err=e}
+  if(secs&&secs.length)return secs;
+  try{return await fetchDocx(ref)}catch(e){if(err)throw err;return secs||[]}}
+async function fetchBookText(ref,prog){
   const base={bookId:ref.bookId,...(ref.bookUid?{bookUid:ref.bookUid}:{})};
   let count=null;
   try{const d=await call('library.getBookDetails',base);count=d&&d.lineCount;if(d&&d.title&&!ref.title)ref.title=d.title}catch(e){}
@@ -503,7 +535,7 @@ async function openBook(ref,index){
   const key=keyOf(ref);
   let tb=tabs.find(t=>t.key===key);
   if(!tb){
-    tb={key,ref:{bookId:ref.bookId,bookUid:ref.bookUid,title:ref.title||ref.book||'ספר'},secs:null,toc:[],pages:[],sig:'',pending:[],p:0,done:false,pos:0};
+    tb={key,ref:{bookId:ref.bookId,bookUid:ref.bookUid,type:ref.type,title:ref.title||ref.book||'ספר'},secs:null,toc:[],pages:[],sig:'',pending:[],p:0,done:false,pos:0};
     tabs.push(tb);
   }
   await activate(tb,index);
@@ -846,7 +878,11 @@ function closeDrawers(){if(document.activeElement&&document.activeElement.blur)d
 function openDrawer(id){closeDrawers();$('#'+id).classList.add('on');$('#shade').classList.add('on');if(id==='set')renderSet();if(id==='toc')renderToc();if(id==='xt')renderXt()}
 $('#bXt').onclick=()=>toggleDock('xt');
 $('#shade').onclick=closeDrawers;$$('[data-close]').forEach(b=>b.onclick=closeDrawers);
-$('#hLib').onclick=showLib;
+$('#hLib').onclick=showLib;$('#cleanX').onclick=()=>document.body.classList.remove('clean');
+async function hDefSync(){const b=$('#hDef'),st=$('#hDefS');let x=null;try{x=await call('reader.getDefaultTextReader',{})}catch(e){b.hidden=true;st.textContent='קורא ברירת המחדל אינו זמין בגרסת אוצריא זו';return}
+  const on=!!(x&&x.enabled);b.hidden=false;b.textContent=on?'כיבוי קורא ברירת המחדל':'הפעלת קורא ברירת המחדל';b.dataset.on=on?'1':'';
+  st.textContent=on?'פעיל: ספרים נפתחים במצב קריאה בתוך הקורא הרגיל':'כבוי: ספרים נפתחים בעיון הרגיל של אוצריא'}
+$('#hDef').onclick=async()=>{const on=!$('#hDef').dataset.on;G.defReader=on;saveG();try{await call('reader.setDefaultTextReader',{enabled:on});toast(on?'ספרים ייפתחו מעכשיו במצב קריאה':'ספרים ייפתחו מעכשיו בעיון הרגיל')}catch(e){toast('לא ניתן לשנות: '+e.message,4000)}hDefSync()};
 $('#bNew').onclick=showLib;$('#bToc').onclick=()=>toggleDock('toc');$('#bSet').onclick=()=>openDrawer('set');
 $('#bFull').onclick=()=>{document.body.classList.toggle('clean');toast('לחזרה: Esc')};
 $('#bMode').onclick=()=>{setOpt('mode',ST.mode==='h'?'v':'h');toast(ST.mode==='h'?'גלילה לצד':'גלילה למטה')};
@@ -889,7 +925,7 @@ function drawLib(){
   $('#qs').placeholder='איתור ספר או מחבר ב'+(cur_.title||'ספריית אוצריא');
   $('#lvMode').innerHTML=libMode==='grid'?ILIST:IGRID;
   const frag=document.createDocumentFragment();
-  const pick=(b,e)=>{sel=b;$$('.lcard.sel,.lrow.sel').forEach(x=>x.classList.remove('sel'));e.currentTarget.classList.add('sel');openBook({bookId:b.bookId,bookUid:b.bookUid,title:b.title})};
+  const pick=(b,e)=>{sel=b;$$('.lcard.sel,.lrow.sel').forEach(x=>x.classList.remove('sel'));e.currentTarget.classList.add('sel');openBook({bookId:b.bookId,bookUid:b.bookUid,type:b.type,title:b.title})};
   const bookEl=(b,lv,i)=>{
     const el=document.createElement('button');el.title=b.title;
     if(libMode==='grid'&&!(lv>=0&&!q&&libMode==='tree')){el.className='lcard'+(sel&&sel.bookId===b.bookId?' sel':'');el.style.animationDelay=Math.min(i*12,250)+'ms';
@@ -1142,7 +1178,7 @@ function renderSet(){
   if(ST.holy!=='none')tg('אופן ההצגה','holyDisp',[['kinuy','כינוי (יקוק, אלקים…)'],['dash','מקפים (י-ה-ו-ה)']]);
   const d=h('<div class="sw2"><span>הסתרת "א-ל" גם ללא ניקוד</span><input type="checkbox"></div>');
   const a=d.querySelector('input');a.checked=!!ST.alef;a.onchange=()=>setOpt('alef',a.checked);
-  const CL=[['2.1.0',['החלוקה לעמודים מתחילה במקום הקריאה – אפשר לקרוא מיד, והעמודים הקודמים מסודרים ברקע','מספרי העמודים לא קופצים: "עמוד X מתוך Y" מוצג רק כשהחלוקה הסתיימה, ולידו אחוז ההתקדמות','מעבר לעמוד: לחיצה על "עמוד" בשורה התחתונה או Ctrl+G; מספרי עמודים ליד כותרות תוכן העניינים','לחצן "מצב קריאה" בסרגל אוצריא הוא כעת לחצן מפוצל: לחיצה מחליפה קורא, והחץ פותח תפריט – מסך נקי, כיוון גלילה, טורים, מעבר לעמוד ודיווח','בקורא המשובץ הוסר הסרגל הנוסף שמתחת לסרגל אוצריא; בשורה התחתונה הוסרו חצים וכפתורי גודל אות הכפולים לאלה של אוצריא','סמל כיוון הגלילה משתנה לפי הכיוון הנוכחי, והכיוון נשמר','בגלילה למטה: קו דק ומספר עמוד עדין בין עמוד לעמוד','שליחת דיווח דרך אוצריא מתוך ההגדרות','הדרכה קצרה על הדפדוף בראש ההגדרות']],['2.0.0',['לחצן "מצב קריאה" בסרגל הספר מחליף את אותה כרטיסייה בין שני טורים לקורא הרגיל ובחזרה – בלי לעבור ללשונית התוסף','בלשונית התוסף: לחצן מעבר לקורא הרגיל של אוצריא באותו מקום בספר','אם קורא ברירת המחדל כבוי, הלחצן פותח את הספר בלשונית התוסף ומסביר איך להפעיל החלפה בתוך הכרטיסייה']],['1.7.1',['מסגרת בסגנון קורא אוצריא לגרסאות ללא קורא משובץ (0.9.98): סרגל כלים עליון, חלונית ניווט בימין (ניווט / כותרות / חיפוש בספר) וחלונית מפרשים בשמאל (מפרשים / קישורים / סימניות / חיפוש)','אפשר לגרור את קצה החלוניות לשינוי הרוחב (דאבל-קליק מאפס), ולכווץ או להרחיב אותן בחץ שבקצה','דפדוף עמוד אחד (טור) בכל לחיצה, גלגל או חץ; אפשר לחזור למרווח שלם בהגדרות (אופן דפדוף)','בגרסת אוצריא שאינה תומכת בקורא ברירת מחדל לא מוצגת שוב ושוב הודעת שגיאה','לחיצה על פסקה בטקסט בוחרת אותה ומציגה את המפרשים שלה, גם בלי להפעיל קורא ברירת מחדל','מפרשים מוצגים ישר בחלונית עם כותרת מקור וסינון לפי מפרש','כשהקורא המשובץ פעיל (0.9.99 ואילך) התוסף ממשיך להשתמש בסרגל האמיתי של אוצריא']],['1.5.1',['תיקון: הפעלת קורא ברירת המחדל בלחיצה (מחוות משתמש תקינה) והמתג משקף את המצב האמיתי באוצריא','כפתורי דפדוף חצי-שקופים בשני הצדדים','פתיחת ספר מהספרייה, מהאיתור או מהחיפוש נכנסת ישר למצב קריאה (מתג בהגדרות)','סנכרון מיקום וכותרת עם כרטיסיית אוצריא, וגודל אות משותף','הדגשת מילות החיפוש בתוך הטקסט','כפתור חזרה לעיון הרגיל לספר הנוכחי','תמיכה בעדכוני תצוגה (גודל אות/ניקוד) מסרגל אוצריא']],['1.4.2',['הסרגל נשאר מלא גם בקריאה (וורד/פתוחים/אחרונים, מעלה, תצוגה)','כפתור "פתח בתוסף במצב קריאה" בשדות האיתור של אוצריא (גרסת 0.9.99+)','תיאור קצר מ-150 תווים']],['1.4.1',['תוכן עניינים בימין ליד הלשוניות, מפרשים בשמאל; החלוניות נפתחות מתחת לסרגלים','אודות: מבוסס חלקית על תוסף "שני טורים"','אבחון קורא ברירת מחדל: הצגת גרסת אוצריא בשגיאה']],['1.4.0',['סרגל קשיח אחד: בית, איתור, וורד/פתוחים/אחרונים, מפרשים, תוכן, הגדרות – תמיד מוצג','שורת לשוניות נמוכה מתחתיו, עם + מימין והפרדה ברורה בין לשוניות','לחיצה על ספר בספרייה פותחת אותו מיד במצב קריאה']],['1.3.1',['לשוניות: הפרדה ברורה בין לשוניות, והלשונית הפעילה מודגשת בצבע ראשי']],['1.3.0',['נפתח כברירת מחדל בספרייה ולא בספר הפתוח','וורד / פתוחים / אחרונים עברו לשורת הכלים של הספרייה (חלונית צפה) במקום עמודה צדדית']],['1.2.1',['בספרייה: כפתור בית (חזרה לראש הספרייה) וכפתור רמה אחת למעלה']],['1.2.0',['מפרשים, סימניות וחיפוש בספרייה בחלונית אחת','הוסרו כפתורי ספרייה/וורד מהסרגל (ספרייה ב-+, ייצוא בהגדרות ובכרטיס הספר)','תיקון קורא ברירת מחדל: בדיקת מצב אמיתי בכל פתיחה, הודעת שגיאה ברורה, ודרישת אוצריא 0.9.98+']],['1.1.0',['בחירת מספר טורים: 1 עד 5 (בהגדרות)','ייצוא לוורד דרך חלון "שמור בשם" של אוצריא (הרשאת fs.user_files.write)','הגדרת קורא ברירת המחדל מנסה שוב בלחיצה הראשונה אם נדחתה, ובודקת מצב קיים']],['1.0.2',['שמות קדושים מוסתרים כברירת מחדל (כינוי)','ברשימת "פתוחים" מופיעים רק ספרי טקסט אמיתיים מהספרייה – ללא תוספים','יומן שינויים']],['1.0.1',['כפתור + ללשונית חדשה (ספרייה)','תוכן העניינים עבר לצד ימין','סינון תוספים מרשימת הפתוחים']],['1.0.0',['גרסה ראשונה: קריאה בשני טורים נגללים לצד, ספרייה בסגנון אוצריא, פתוחים ואחרונים, ייצוא לוורד, הסתרת שמות קדושים']]];
+  const CL=[['2.2.0',['שם המפתח: חד בדרא','מסך הפתיחה של לשונית התוסף מסביר שספרים נפתחים במצב קריאה בתוך הקורא הרגיל, עם כפתור לקריאה בלשונית התוסף וכפתור להפעלה/כיבוי של קורא ברירת המחדל','בלשונית התוסף הסרגל וההגדרות מוצגים תמיד כשספר פתוח, ובמסך נקי יש כפתור יציאה','בתפריט הלחצן בסרגל אוצריא: "קריאה בלשונית התוסף"','פתיחת ספרי וורד (DOCX) מהספרייה בתוסף']],['2.1.0',['החלוקה לעמודים מתחילה במקום הקריאה – אפשר לקרוא מיד, והעמודים הקודמים מסודרים ברקע','מספרי העמודים לא קופצים: "עמוד X מתוך Y" מוצג רק כשהחלוקה הסתיימה, ולידו אחוז ההתקדמות','מעבר לעמוד: לחיצה על "עמוד" בשורה התחתונה או Ctrl+G; מספרי עמודים ליד כותרות תוכן העניינים','לחצן "מצב קריאה" בסרגל אוצריא הוא כעת לחצן מפוצל: לחיצה מחליפה קורא, והחץ פותח תפריט – מסך נקי, כיוון גלילה, טורים, מעבר לעמוד ודיווח','בקורא המשובץ הוסר הסרגל הנוסף שמתחת לסרגל אוצריא; בשורה התחתונה הוסרו חצים וכפתורי גודל אות הכפולים לאלה של אוצריא','סמל כיוון הגלילה משתנה לפי הכיוון הנוכחי, והכיוון נשמר','בגלילה למטה: קו דק ומספר עמוד עדין בין עמוד לעמוד','שליחת דיווח דרך אוצריא מתוך ההגדרות','הדרכה קצרה על הדפדוף בראש ההגדרות']],['2.0.0',['לחצן "מצב קריאה" בסרגל הספר מחליף את אותה כרטיסייה בין שני טורים לקורא הרגיל ובחזרה – בלי לעבור ללשונית התוסף','בלשונית התוסף: לחצן מעבר לקורא הרגיל של אוצריא באותו מקום בספר','אם קורא ברירת המחדל כבוי, הלחצן פותח את הספר בלשונית התוסף ומסביר איך להפעיל החלפה בתוך הכרטיסייה']],['1.7.1',['מסגרת בסגנון קורא אוצריא לגרסאות ללא קורא משובץ (0.9.98): סרגל כלים עליון, חלונית ניווט בימין (ניווט / כותרות / חיפוש בספר) וחלונית מפרשים בשמאל (מפרשים / קישורים / סימניות / חיפוש)','אפשר לגרור את קצה החלוניות לשינוי הרוחב (דאבל-קליק מאפס), ולכווץ או להרחיב אותן בחץ שבקצה','דפדוף עמוד אחד (טור) בכל לחיצה, גלגל או חץ; אפשר לחזור למרווח שלם בהגדרות (אופן דפדוף)','בגרסת אוצריא שאינה תומכת בקורא ברירת מחדל לא מוצגת שוב ושוב הודעת שגיאה','לחיצה על פסקה בטקסט בוחרת אותה ומציגה את המפרשים שלה, גם בלי להפעיל קורא ברירת מחדל','מפרשים מוצגים ישר בחלונית עם כותרת מקור וסינון לפי מפרש','כשהקורא המשובץ פעיל (0.9.99 ואילך) התוסף ממשיך להשתמש בסרגל האמיתי של אוצריא']],['1.5.1',['תיקון: הפעלת קורא ברירת המחדל בלחיצה (מחוות משתמש תקינה) והמתג משקף את המצב האמיתי באוצריא','כפתורי דפדוף חצי-שקופים בשני הצדדים','פתיחת ספר מהספרייה, מהאיתור או מהחיפוש נכנסת ישר למצב קריאה (מתג בהגדרות)','סנכרון מיקום וכותרת עם כרטיסיית אוצריא, וגודל אות משותף','הדגשת מילות החיפוש בתוך הטקסט','כפתור חזרה לעיון הרגיל לספר הנוכחי','תמיכה בעדכוני תצוגה (גודל אות/ניקוד) מסרגל אוצריא']],['1.4.2',['הסרגל נשאר מלא גם בקריאה (וורד/פתוחים/אחרונים, מעלה, תצוגה)','כפתור "פתח בתוסף במצב קריאה" בשדות האיתור של אוצריא (גרסת 0.9.99+)','תיאור קצר מ-150 תווים']],['1.4.1',['תוכן עניינים בימין ליד הלשוניות, מפרשים בשמאל; החלוניות נפתחות מתחת לסרגלים','אודות: מבוסס חלקית על תוסף "שני טורים"','אבחון קורא ברירת מחדל: הצגת גרסת אוצריא בשגיאה']],['1.4.0',['סרגל קשיח אחד: בית, איתור, וורד/פתוחים/אחרונים, מפרשים, תוכן, הגדרות – תמיד מוצג','שורת לשוניות נמוכה מתחתיו, עם + מימין והפרדה ברורה בין לשוניות','לחיצה על ספר בספרייה פותחת אותו מיד במצב קריאה']],['1.3.1',['לשוניות: הפרדה ברורה בין לשוניות, והלשונית הפעילה מודגשת בצבע ראשי']],['1.3.0',['נפתח כברירת מחדל בספרייה ולא בספר הפתוח','וורד / פתוחים / אחרונים עברו לשורת הכלים של הספרייה (חלונית צפה) במקום עמודה צדדית']],['1.2.1',['בספרייה: כפתור בית (חזרה לראש הספרייה) וכפתור רמה אחת למעלה']],['1.2.0',['מפרשים, סימניות וחיפוש בספרייה בחלונית אחת','הוסרו כפתורי ספרייה/וורד מהסרגל (ספרייה ב-+, ייצוא בהגדרות ובכרטיס הספר)','תיקון קורא ברירת מחדל: בדיקת מצב אמיתי בכל פתיחה, הודעת שגיאה ברורה, ודרישת אוצריא 0.9.98+']],['1.1.0',['בחירת מספר טורים: 1 עד 5 (בהגדרות)','ייצוא לוורד דרך חלון "שמור בשם" של אוצריא (הרשאת fs.user_files.write)','הגדרת קורא ברירת המחדל מנסה שוב בלחיצה הראשונה אם נדחתה, ובודקת מצב קיים']],['1.0.2',['שמות קדושים מוסתרים כברירת מחדל (כינוי)','ברשימת "פתוחים" מופיעים רק ספרי טקסט אמיתיים מהספרייה – ללא תוספים','יומן שינויים']],['1.0.1',['כפתור + ללשונית חדשה (ספרייה)','תוכן העניינים עבר לצד ימין','סינון תוספים מרשימת הפתוחים']],['1.0.0',['גרסה ראשונה: קריאה בשני טורים נגללים לצד, ספרייה בסגנון אוצריא, פתוחים ואחרונים, ייצוא לוורד, הסתרת שמות קדושים']]];
   const cl=h('<button class="ibtn sec" id="clb">יומן שינויים · גרסה '+CL[0][0]+'</button><div id="cll" hidden></div>');
   cl.querySelector('#cll').innerHTML=CL.map(([v,a])=>'<div style="margin:10px 0 2px;font-weight:700">גרסה '+v+'</div><ul style="margin:0;padding-inline-start:20px;color:var(--onSurfaceVariant)">'+a.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>').join('');
   cl.querySelector('#clb').onclick=()=>{const l=cl.querySelector('#cll');l.hidden=!l.hidden};
@@ -1347,6 +1383,7 @@ function tbChildren(){const v=ST.mode==='v';return[
   {id:'rm-mode',title:v?'מעבר לגלילה לצד':'מעבר לגלילה למטה',icon:v?'arrow_bidirectional_left_right_24_regular':'arrow_bidirectional_up_down_24_regular'},
   {id:'rm-cols',title:'מספר טורים (1–5)',icon:'text_column_two_24_regular'},
   {id:'rm-page',title:'מעבר לעמוד… (Ctrl+G)',icon:'document_page_number_24_regular'},
+  {id:'rm-tab',title:'קריאה בלשונית התוסף',icon:'open_24_regular'},
   {id:'rm-report',title:'שליחת דיווח על התוסף',icon:'person_feedback_24_regular'}]}
 function syncTbMenu(){if(!EMB)return;call('reader.updateToolbarItem',{id:'reading-mode-toggle',patch:{children:tbChildren()}}).catch(()=>{})}
 const CMDS={
@@ -1354,6 +1391,7 @@ const CMDS={
   'rm-mode':()=>{setOpt('mode',ST.mode==='h'?'v':'h');modeIcon();syncTbMenu();toast(ST.mode==='h'?'גלילה לצד':'גלילה למטה')},
   'rm-cols':()=>{setOpt('cols',(ST.cols|0)%5+1);toast('טורים: '+ST.cols)},
   'rm-page':()=>openJump(),
+  'rm-tab':()=>{},
   'rm-report':()=>{openDrawer('set');setTimeout(()=>{const t=document.getElementById('repT');if(t){t.scrollIntoView({block:'center'});t.focus()}},80)}
 };
 const CMDK='wr:cmd',seenCmd=new Set();
@@ -1361,6 +1399,10 @@ function cmdMatch(m){return EMB&&(m.id!=null&&EMB.id!=null?m.id===EMB.id:m.bookI
 function runCmd(c){try{CMDS[c]&&CMDS[c]()}catch(e){toast('שגיאה: '+e.message,4000)}}
 async function routeCmd(d){
   const m={id:d.currentId??null,bookId:d.currentBookId,c:d.itemId,t:Date.now(),n:Math.random().toString(36).slice(2)};
+  if(m.c==='rm-tab'){if(EMB)return;try{await call('plugin.openSelf',{})}catch(e){}
+    let st=null;try{st=await call('reader.getCurrentState')}catch(e){}
+    const bid=d.currentBookId||st&&st.currentBookId;if(!bid){toast('לא נמצא ספר פתוח');return}
+    await openBook({bookId:bid,bookUid:d.currentBookUid||st&&st.currentBookUid,title:d.currentBook||st&&st.currentBook||bid},d.currentIndex??(st&&st.currentIndex)??0);return}
   if(EMB){if(cmdMatch(m))runCmd(m.c);return}
   // האירוע מגיע למופע הראשי של התוסף; מעבירים אותו למופע שבתוך כרטיסיית הספר
   let ts=null;try{ts=await sto.get(liveKey(m.id,m.bookId))}catch(e){}
@@ -1415,9 +1457,9 @@ async function init(boot){
   {const wide=innerWidth>=1100;applyPanelPrefs();setDock('toc',G.dkT??wide,false);setDock('xt',G.dkX??wide,false);syncHdr()}
   let skipDef=false;try{const un=await sto.get('defreader-unsupported');if(un){const i=await call('app.getInfo');skipDef=!!(i&&i.version&&i.version===un)}}catch(e){}
   if(G.defReader&&!skipDef){
-    if(!(await trySetDef())){const once=ev=>{if(ev.type==='keydown'&&ev.key==='Escape')return;removeEventListener('click',once,true);removeEventListener('keydown',once,true);trySetDef(true)};addEventListener('click',once,true);addEventListener('keydown',once,true)}
+    if(!(await trySetDef())){const once=ev=>{if(ev.type==='keydown'&&ev.key==='Escape')return;if(ev.target&&ev.target.closest&&ev.target.closest('#hDef'))return;removeEventListener('click',once,true);removeEventListener('keydown',once,true);trySetDef(true)};addEventListener('click',once,true);addEventListener('keydown',once,true)}
   }
-  if(!tabs.length)showLib();
+  hDefSync();
 }
 if(O){
   O.on('plugin.boot',b=>init(b));

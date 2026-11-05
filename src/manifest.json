@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "id": "reading-mode-plugin",
   "name": "מצב קריאה",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "קריאה בטורים נגללים כמו בוורד, כקורא משובץ בכרטיסיית הספר, עם ספרייה, מפרשים, סימניות וייצוא לוורד. מבוסס חלקית על תוסף \"שני טורים\".",
-  "author": "שני טורים",
+  "author": "חד בדרא",
   "type": "webapp",
   "entrypoint": "index.html",
   "category": "Utilities",
@@ -69,6 +69,11 @@
               "id": "rm-page",
               "title": "מעבר לעמוד… (Ctrl+G)",
               "icon": "document_page_number_24_regular"
+            },
+            {
+              "id": "rm-tab",
+              "title": "קריאה בלשונית התוסף",
+              "icon": "open_24_regular"
             },
             {
               "id": "rm-report",
