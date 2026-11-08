@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "reading-mode-plugin",
   "name": "מצב קריאה",
-  "version": "2.3.2",
+  "version": "2.4.0",
   "description": "קריאה בטורים נגללים כמו בוורד, כקורא משובץ בכרטיסיית הספר, עם ספרייה, מפרשים, סימניות וייצוא לוורד. מבוסס חלקית על תוסף \"שני טורים\".",
   "author": "חד בדרא",
   "type": "webapp",
@@ -30,7 +30,8 @@
     "plugin.storage.read",
     "plugin.storage.write",
     "events.subscribe:theme.changed",
-    "search.field_actions"
+    "search.field_actions",
+    "app.run_on_startup"
   ],
   "contributes": {
     "toolTab": {
@@ -62,7 +63,7 @@
             },
             {
               "id": "rm-cols",
-              "title": "מספר טורים (1–5)",
+              "title": "מספר טורים…",
               "icon": "text_column_two_24_regular"
             },
             {
@@ -74,6 +75,16 @@
               "id": "rm-tab",
               "title": "קריאה בלשונית התוסף",
               "icon": "open_24_regular"
+            },
+            {
+              "id": "rm-def",
+              "title": "קורא ברירת מחדל",
+              "icon": "book_open_24_regular"
+            },
+            {
+              "id": "rm-settings",
+              "title": "הגדרות התוסף",
+              "icon": "settings_24_regular"
             },
             {
               "id": "rm-report",
