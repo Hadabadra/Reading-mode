@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "reading-mode-plugin",
   "name": "מצב קריאה",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "קריאה בטורים נגללים כמו בוורד בתוך כרטיסיית הספר, עם מפרשים, סימניות, ספרייה וייצוא לוורד. פועל ללא אינטרנט",
   "author": "חד בדרא",
   "type": "webapp",
