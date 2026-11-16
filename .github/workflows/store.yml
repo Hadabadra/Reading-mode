@@ -47,5 +47,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           V=${{ steps.v.outputs.version }}
-          cd src && zip -qr -X "../reading-mode-$V.otzplugin" manifest.json index.html && cd ..
+          cd src && zip -qr -X "../reading-mode-$V.otzplugin" . && cd ..
           gh release view "v$V" >/dev/null 2>&1 || gh release create "v$V" "reading-mode-$V.otzplugin" -t "מצב קריאה $V" -n "ראו מה חדש בתוך התוסף (אודות)."
