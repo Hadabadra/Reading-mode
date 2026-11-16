@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "id": "reading-mode-plugin",
   "name": "מצב קריאה",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "description": "קריאה בטורים נגללים כמו בוורד בתוך כרטיסיית הספר, עם מפרשים, סימניות, ספרייה וייצוא לוורד. פועל ללא אינטרנט",
-  "author": "חד בדרא",
+  "author": "Hadabadra",
   "type": "webapp",
   "entrypoint": "index.html",
   "category": "Utilities",
@@ -91,7 +91,15 @@
               "title": "שליחת דיווח על התוסף",
               "icon": "person_feedback_24_regular"
             }
-          ]
+          ],
+          "when": {
+            "not": {
+              "storage": {
+                "key": "hb.hide.reading-mode-toggle",
+                "equals": true
+              }
+            }
+          }
         }
       ],
       "shortcuts": [
