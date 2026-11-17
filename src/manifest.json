@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "reading-mode-plugin",
   "name": "מצב קריאה",
-  "version": "3.1.1",
+  "version": "4.0.0",
   "description": "קריאה בטורים נגללים כמו בוורד בתוך כרטיסיית הספר, עם מפרשים, סימניות, ספרייה וייצוא לוורד. פועל ללא אינטרנט",
   "author": "Hadabadra",
   "type": "webapp",
@@ -31,7 +31,8 @@
     "plugin.storage.write",
     "events.subscribe:theme.changed",
     "search.field_actions",
-    "app.run_on_startup"
+    "app.run_on_startup",
+    "app.open_url"
   ],
   "contributes": {
     "toolTab": {
